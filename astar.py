@@ -11,6 +11,7 @@ import pygame, random, math, time
 import heapq
 from pygame.locals import *
 
+
 class Cell(object):  
     def __init__(self, pos, size):
         self.rect = pygame.Rect(pos[0], pos[1], size, size)
@@ -36,6 +37,7 @@ class AStar_Model:
         self.screen_size = screen_size
         self.start_button = pygame.Rect(550, 250, 100, 100)
         self.start_AStar = False
+        self.alg_done = True
         
         self.open = [] #cells currently in open list, still processing
         heapq.heapify(self.open)
@@ -60,6 +62,7 @@ class AStar_Model:
             y = 0
             
     def init_AStar(self):
+        print "Starting AStar"
         self.start = self.get_cell(0,0)
         self.end = self.end_rect
     
@@ -87,6 +90,7 @@ class AStar_Model:
         while cell.parent is not self.start:
             cell = cell.parent
             print "path: cell: %d, %d" % (cell.x, cell.y)
+        self.alg_done = True
     
     def update_cell(self, adj, cell):
         adj.g = cell.g + 10
@@ -105,20 +109,26 @@ class AStar_Model:
             adj_cells = self.get_adjacent_cells(cell)
             for c in adj_cells:
                 if c.reachable and c not in self.closed:
-                    if (c.f, c) in self.op:
+                    if (c.f, c) in self.open:
                         if c.g > cell.g + 50:
                             self.update_cell(c, cell)
                         else:
                             self.update_cell(c, cell)
                             heapq.heappush(self.open, (c.f, c))
+                    else:
+                        self.update_cell(c, cell)
+                        heapq.heappush(self.open, (c.f, c))
             
     
     
     def update(self):
         """Updates with each pass"""
         if self.start_AStar:
+            self.alg_done = False
             self.init_AStar()
-    
+            
+            
+                
 class PyGameWindowView:
     """draws our pretty maze"""
     def __init__(self, model, screen):
@@ -149,7 +159,7 @@ class Controller:
         x, y = event.pos        
         for cell in self.model.cells:
             if cell.rect.collidepoint(x, y):
-                cell.blocked = not cell.blocked
+                cell.reachable = not cell.reachable
         if self.model.start_button.collidepoint(x, y):
             self.model.start_AStar = True
 
@@ -171,6 +181,9 @@ if __name__ == "__main__":
                 controller.handle_pygame_mouse(event)
         model.update()
         view.draw()
-        time.sleep(0.001)
+        if model.alg_done:
+            time.sleep(0.001)
+        else:
+            time.sleep(100)
         
     pygame.quit()
