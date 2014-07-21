@@ -23,6 +23,7 @@ class Cell(object):
         self.f = 0 #sum of g and h
         self.parent = None
         
+        
 class Player:
     """Our moving block"""
     def __init__(self, x, y):
@@ -47,6 +48,7 @@ class AStar_Model:
         self.grid_size = self.screen_size / 10
         self.construct_grid()
 #        self.construct_environment()
+        
     
     def construct_grid(self):
         grid_size = self.grid_size
@@ -60,7 +62,7 @@ class AStar_Model:
                 y += grid_size
             x += grid_size
             y = 0
-            
+                      
     def init_AStar(self):
         print "Starting AStar"
         self.start = self.get_cell(0,0)
@@ -70,9 +72,10 @@ class AStar_Model:
         return 50*(abs(cell.x - self.end.x) + abs(cell.y - self.end.y)) #we arbitrary set 50 as the cost
 
     def get_cell(self, x, y):
-        return self.cells[x * self.grid + y]
+        return self.cells[x * self.grid * self.grid_size + y * self.grid_size]
         
     def get_adjacent_cells(self, cell):
+        print "getting adj cells"
         grid_size = self.grid_size
         cells = []
         if cell.x < self.grid - grid_size:
@@ -83,6 +86,7 @@ class AStar_Model:
             cells.append(self.get_cell(cell.x - grid_size, cell.y))
         if cell.y < self.grid - grid_size:
             cells.append(self.get_cell(cell.x, cell.y + grid_size))
+        print "len adj_cells %d" % len(cells)
         return cells
         
     def display_path(self):
@@ -93,14 +97,18 @@ class AStar_Model:
         self.alg_done = True
     
     def update_cell(self, adj, cell):
+        print "updating cell"
         adj.g = cell.g + 10
         adj.h = self.get_heuristic(adj)
         adj.parent = cell
         adj.f = adj.h + adj.g
     
     def process(self):
+        print "process started"
         heapq.heappush(self.open, (self.start.f, self.start))
+        print "length of open list %d" % len(self.open)
         while len(self.open):
+            print "in while loop"
             f, cell = heapq.heappop(self.open)
             self.closed.add(cell)
             if cell is self.end:
@@ -108,24 +116,29 @@ class AStar_Model:
                 break
             adj_cells = self.get_adjacent_cells(cell)
             for c in adj_cells:
+                print "for c in adj_cells"
                 if c.reachable and c not in self.closed:
+                    print "first if"
                     if (c.f, c) in self.open:
-                        if c.g > cell.g + 50:
+                        print "second if"
+                        if c.g > cell.g + 10:
+                            print "third if"
                             self.update_cell(c, cell)
                         else:
+                            print "pushing to heap"
                             self.update_cell(c, cell)
                             heapq.heappush(self.open, (c.f, c))
                     else:
+                        print "alternative heap pushing"
                         self.update_cell(c, cell)
                         heapq.heappush(self.open, (c.f, c))
-            
-    
-    
+                        
     def update(self):
         """Updates with each pass"""
         if self.start_AStar:
             self.alg_done = False
-            self.init_AStar()
+            self.init_grid()
+            self.process()
             
             
                 
@@ -184,6 +197,6 @@ if __name__ == "__main__":
         if model.alg_done:
             time.sleep(0.001)
         else:
-            time.sleep(100)
+            time.sleep(10)
         
     pygame.quit()
